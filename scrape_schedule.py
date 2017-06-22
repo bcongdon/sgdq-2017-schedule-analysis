@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import json
 from scrape_genres import get_game_genres
 from dateutil.parser import parse
+from urllib import urlencode
 
 
 def get_games_list():
@@ -104,11 +105,17 @@ def match_games_manual(games_list):
     return [x for x in games_list if x['data']]
 
 
+def get_google_search_link(query):
+    return 'https://google.com/Search?{}'.format(urlencode(dict(q=query)))
+
+
 def process_game_platforms(games_list):
     num_games = len(games_list)
     for i, game in enumerate(games_list):
         if "platform" in game:
             continue
+        query = game['title'] + ' game'
+        print "Search Link: {}".format(get_google_search_link(query))
         game_title = game['title'].encode('ascii', 'replace')
         p = raw_input("({0}/{1}) {2}:".format(i + 1,
                                               num_games,
@@ -130,7 +137,10 @@ def add_game_genres(games_list):
         print("({0}/{1}) Searching for: {2}".format(i + 1,
                                                     len(games_list),
                                                     ascii_title))
-        g['data']['genres'] = get_game_genres(g['data']['id'])
+        try:
+            g['data']['genres'] = get_game_genres(g['data']['id'])
+        except:
+            print '*** Genre scraping failed for: {}'.format(g['title'])
     return games_list
 
 if __name__ == '__main__':
@@ -148,7 +158,7 @@ if __name__ == '__main__':
     raw_games = process_game_platforms(raw_games)
 
     print("*** [5/5] Downloading game genres...")
-    raw_games = process_game_platforms(raw_games)
+    raw_games = add_game_genres(raw_games)
 
     with open('scraped_games.json', 'w+') as f:
         json.dump(raw_games, f)
